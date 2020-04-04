@@ -7,31 +7,34 @@ window.onload = ()=>{
 
     const btn  = document.querySelector('#btn');
     const timeContainer =document.getElementById('time-container');
-    const input = document.getElementById('input');
-    
-    const player = document.getElementById('music');
-    window.alert(input);
+   
+    const player = document.getElementById('player');
+
+    const setH = document.getElementById('hours');
+    const setM = document.getElementById('minutes');
+    const setS = document.getElementById('seconds');
+     
     let workTimeCounter = 0;
     let timeToWork;
     let workState = false;
 
     btn.onclick = ()=>{
-        timeToWork =  input.value;
-        startWork(timeToWork);
+        if(workState == true) return;
+        timeToWork =  setH.value*360 + setM.value*6 + setS.value;
+        startWork(timeToWork*1000);
     }
 
     function startWork(){
         workState = true; //开始工作
-       
         let workTimer = new Timer({
-            ontick: (ms) =>{
-                updateTime(ms);
+            ontick: (sec) =>{
+                updateTime(sec);
             },
             onend: ()=>{
                 workState = false;
-                player.play();
                 timeContainer.innerHTML = '';
                 notification();
+                player.play();
             }
         })
         if(timeToWork === undefined){
@@ -41,18 +44,23 @@ window.onload = ()=>{
         workTimer.start(timeToWork);
     }
 
-    function updateTime(ms) {
-    let timeContainer = document.getElementById('time-container');
-    let s = (ms/1000).toFixed(0);
-    let ss = (s%60);
-    let min = (s/60).toFixed(0);
-    timeContainer.innerText = `${min.toString().padStart(2,0)}: ${ss.toString().padStart(2,0)}`
-    
+    function updateTime(sec) {
+        
+        sec = ((sec+1)/1000).toFixed(0);
+        console.log(sec);
+        let timeContainer = document.getElementById('time-container');
+        let h = (sec/3600).toFixed(0);
+        console.log('h:'+h)
+        let min = ((sec-h*3600)/60-1).toFixed(0);
+        let s = sec%60;
+        timeContainer.innerText = 
+        `${h.toString().padStart(2,0)}:${min.toString().padStart(2,0)}:${s.toString().padStart(2,0)}`
     }
 
     async function notification(){
         let res = await ipcRenderer.invoke('work-notification');
         if(res === 'rest'){
+            player.pause();
             setTimeout(() =>{
                 var note = {
                     title:'小主,该回去工作啦!',
@@ -71,9 +79,10 @@ window.onload = ()=>{
                         startWork();
                     }
                 });
-            },5*1000)
+            },5*60*1000)
         }else if(res === 'work'){
-            startWork()
+            player.pause();
+            startWork();
         }
     }
     
